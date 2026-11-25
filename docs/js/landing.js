@@ -9,8 +9,9 @@
 
   const $ = (id) => document.getElementById(id);
   const landing = $('landing'), stage = $('stage'), comp = $('computer'), screenEl = $('screenRect');
+  const hv = $('hv'), hti = $('hti'), badge = $('badge');
   const forum = $('forum'), cloud = $('cloud'), hiv = $('hiv'), hint = $('hint');
-  const cards = Array.from(forum.querySelectorAll('.card'));
+  const PAL = ['#673141', '#4d5f2a', '#5B7396', '#7a5a8a', '#8E2F4A'];
   /* cloud words are lifted from the keyword spans inside the real posts: one word per distinct keyword */
   const wordEls = [];
   (() => {
@@ -20,7 +21,10 @@
       if (seen[key]) return;
       seen[key] = 1;
       const el = document.createElement('span');
-      el.className = 'w' + (n % 3 === 1 ? ' i' : '');
+      /* same look in the post and in the cloud: the word only grows */
+      const ital = n % 3 === 1, col = PAL[n % PAL.length];
+      el.className = 'w' + (ital ? ' i' : ''); el.style.color = col;
+      if (ital) sp.classList.add('i'); sp.style.color = col;
       el.dataset.w = sp.dataset.w; el.textContent = sp.textContent; el._span = sp;
       cloud.appendChild(el); wordEls.push(el); n++;
     });
@@ -31,7 +35,7 @@
   const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
   const lerp = (a, b, t) => a + (b - a) * t;
 
-  let vw = 0, vh = 0, dxT = 0, dyT = 0, sMax = 1;
+  let vw = 0, vh = 0, dxT = 0, dyT = 0, sMax = 1, fitM = 0.3, scx = 0, scy = 0;
   let words = [];            // {el,size,w,h,tx,ty,sx,sy,ox,oy,vx,vy,k}
   let hivBox = { w: 0, h: 0, cx: 0, cy: 0 };
   let progress = reduce ? 1 : 0;
@@ -47,10 +51,11 @@
     const st = stage.getBoundingClientRect();
     const cr = comp.getBoundingClientRect();
     const sr = screenEl.getBoundingClientRect();
-    const scx = sr.left + sr.width / 2 - st.left, scy = sr.top + sr.height / 2 - st.top;
+    scx = sr.left + sr.width / 2 - st.left; scy = sr.top + sr.height / 2 - st.top;
     comp.style.transformOrigin = (scx - (cr.left - st.left)) + 'px ' + (scy - (cr.top - st.top)) + 'px';
     dxT = vw / 2 - scx; dyT = vh / 2 - scy;
-    sMax = Math.max(vw / sr.width, vh / sr.height) * 1.08;
+    fitM = Math.min(sr.width / vw, sr.height / vh) * 0.94;   // the forum layer sits inside the screen at this scale
+    sMax = 1 / fitM;                                        // and lands at exactly 1:1 when we are fully zoomed in
     comp.style.transform = prev;
   }
 
@@ -65,21 +70,26 @@
   function layoutWords() {
     const k = clamp(Math.sqrt(vw * vh) / 560, 0.85, 2.1);
     const margin = vw < 600 ? 20 : 30;
-    const hivSize = Math.min(vw * 0.34, vh * 0.28, 260);
-    hiv.style.fontSize = hivSize + 'px';
-    const hw = textWidth('HIV', hivSize, false) * 1.02, hh = hivSize * 1.12;
+    const hivSize = Math.min(vw * 0.3, vh * 0.25, 240);
+    const bw = Math.min(vw * (vw < 600 ? 0.9 : 0.62), 720);
+    hiv.style.width = bw + 'px'; hiv.style.fontSize = hivSize + 'px';
+    hv.style.fontSize = hivSize + 'px';
+    hti.style.fontSize = clamp(bw / (vw < 600 ? 14 : 19), 15, 34) + 'px';
+    const hw = bw, hh = hiv.offsetHeight;
     hivBox = { w: hw, h: hh, cx: vw / 2, cy: vh / 2 };
     const occupied = [{ x: vw / 2 - hw / 2 - 16, y: vh / 2 - hh / 2 - 10, w: hw + 32, h: hh + 20 }];
     const order = wordEls.map((el, i) => ({ el, i, wt: +el.dataset.w })).sort((a, b) => b.wt - a.wt || a.i - b.i);
     const st = stage.getBoundingClientRect();
-    cards.forEach((c) => { c._tf = c.style.transform; c.style.transform = 'none'; });
-    let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const ftf = forum.style.transform; forum.style.transform = 'none';
+    let seed = 23; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const placedC = [];
     words = [];
     order.forEach((o, n) => {
       const size = Math.max(13, (11 + o.wt * 5.2) * k);
       const italic = o.el.classList.contains('i');
       const w = textWidth(o.el.textContent, size, italic) + 4, h = size * 1.08;
+      const sp0 = o.el._span;
+      if (!reduce && !sp0.getClientRects().length) { o.el.style.display = 'none'; return; }
       let best = null, bestD = -1;
       for (let i = 0; i < 90; i++) {
         const x = margin + rnd() * Math.max(1, vw - w - margin * 2), y = margin + rnd() * Math.max(1, vh - h - margin * 2);
@@ -96,37 +106,43 @@
       /* start where the word sits inside its post */
       const sp = o.el._span; let r = sp.getBoundingClientRect(), s0 = 0.6, fromSpan = r.width > 0;
       let cx, cy;
-      if (fromSpan) { cx = r.left - st.left + r.width / 2; cy = r.top - st.top + r.height / 2; s0 = clamp(parseFloat(getComputedStyle(sp).fontSize) / size, 0.3, 1); }
+      if (fromSpan) { cx = r.left - st.left + r.width / 2; cy = r.top - st.top + r.height / 2; s0 = clamp(parseFloat(getComputedStyle(sp).fontSize) / size, 0.05, 1); }
       else { cx = vw / 2; cy = vh / 2; }
-      words.push({ el: o.el, span: fromSpan ? sp : null, size, w, h, tx: best.x, ty: best.y,
-        sx: cx - w / 2, sy: cy - h / 2, s0,
+      /* start exactly where the word sits in its bubble: same centre, same scale, same tilt, so there is no jump when it is handed over */
+      const aw = o.el.offsetWidth || w, ah = o.el.offsetHeight || h;
+      const bub = sp.closest('.bubble'); const rot0 = bub ? (parseFloat(bub.style.getPropertyValue('--r')) || 0) : 0;
+      words.push({ el: o.el, span: fromSpan ? sp : null, size, w, h, tx: best.x, ty: best.y, rot0,
+        sx: cx - aw / 2, sy: cy - ah / 2, s0,
         ox: 0, oy: 0, vx: 0, vy: 0, k: n / Math.max(1, order.length - 1), lastSp: 1,
         ax: 7 + rnd() * 11, ay: 6 + rnd() * 9, f1: 0.22 + rnd() * 0.4, f2: 0.18 + rnd() * 0.4, p1: rnd() * 6.28, p2: rnd() * 6.28 });
     });
-    cards.forEach((c) => { c.style.transform = c._tf || ''; });
+    forum.style.transform = ftf;
+    /* leave in a shuffled order, so words stream out of every bubble */
+    const idx = words.map((_, i) => i); let sd = 5; const r2 = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+    for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(r2() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    idx.forEach((wi, rank) => { words[wi].k = rank / Math.max(1, idx.length - 1); });
   }
 
   /* ---------- per-frame drawing ---------- */
   function drawScene(p) {
     if (!reduce) {
       const z = ease(smooth(0.08, 0.32, p));
-      comp.style.transform = 'translate3d(' + (z * dxT) + 'px,' + (z * dyT) + 'px,0) scale(' + (1 + z * (sMax - 1)) + ')';
-      comp.parentNode.style.visibility = p > 0.38 ? 'hidden' : 'visible';
+      const sc = 1 + z * (sMax - 1);
+      comp.style.transform = 'translate3d(' + (z * dxT) + 'px,' + (z * dyT) + 'px,0) scale(' + sc + ')';
+      comp.parentNode.style.visibility = p > 0.36 ? 'hidden' : 'visible';
       hint.style.opacity = String(1 - smooth(0, 0.05, p));
       hint.style.animation = p > 0.0005 ? 'none' : '';
-      const fo = smooth(0.29, 0.35, p);
-      forum.style.opacity = String(fo);
-      forum.style.visibility = (fo > 0 && p < 0.8) ? 'visible' : 'hidden';
-      forum.style.setProperty('--bg', String(1 - smooth(0.6, 0.74, p)));
-      cards.forEach((c, idx) => {
-        const i = (idx % 3) * 2 + (idx >= 3 ? 1 : 0);
-        const a = smooth(0.34 + i * 0.014, 0.41 + i * 0.014, p);
-        const f = 1 - smooth(0.6 + i * 0.008, 0.7 + i * 0.008, p);
-        c.style.opacity = String(a * f);
-        c.style.transform = 'translateY(' + ((1 - a) * 16 + (1 - f) * -10) + 'px) scale(' + (0.96 + 0.04 * f) + ')';
-      });
+      /* the forum is the computer's screen: same layer, carried along by the zoom */
+      forum.style.transform = 'translate3d(' + ((scx - vw / 2) * (1 - z)) + 'px,' + ((scy - vh / 2) * (1 - z)) + 'px,0) scale(' + (sc * fitM) + ')';
+      forum.style.borderRadius = (1 - z) * 30 + 'px';
+      forum.style.visibility = p < 0.68 ? 'visible' : 'hidden';
+      forum.style.setProperty('--tx', String(smooth(0.2, 0.32, p)));        // scribbles turn into the real words
+      forum.style.setProperty('--bf', String(1 - smooth(0.4, 0.58, p)));     // bubbles fade out in one continuous move, the keywords stay
+      forum.style.setProperty('--bg', String(1 - smooth(0.44, 0.6, p)));
+      if (badge) badge.style.opacity = String(1 - smooth(0, 0.06, p));
+      if (p > 0.02) forum.classList.add('on');
     }
-    const ho = smooth(0.72, 0.85, p);
+    const ho = smooth(0.64, 0.8, p);
     hiv.style.opacity = String(ho);
     hiv.style.transform = 'translate3d(' + (hivBox.cx - hivBox.w / 2) + 'px,' + (hivBox.cy - hivBox.h / 2) + 'px,0) scale(' + (0.75 + 0.25 * ho) + ')';
     hiv.style.transformOrigin = '50% 50%';
@@ -134,14 +150,14 @@
 
   let now = 0;
   function placeWords(p, step) {
-    const active = p > 0.82 && !reduce;
+    const active = p > 0.84 && !reduce;
     const R = Math.max(110, Math.min(vw, vh) * 0.22) * (1 + ptr.burst * 0.9);
     const settle = reduce ? 0 : smooth(0.74, 0.86, p);
     const t = now / 1000;
     let alive = settle > 0;
     for (const wd of words) {
-      const a = reduce ? 1 : ease(smooth(0.5 + wd.k * 0.1, 0.66 + wd.k * 0.1, p));
-      const op = reduce ? 1 : smooth(0.5 + wd.k * 0.1, 0.515 + wd.k * 0.1, p);
+      const a = reduce ? 1 : ease(smooth(0.46 + wd.k * 0.13, 0.62 + wd.k * 0.13, p));
+      const op = reduce ? 1 : (p >= 0.4 ? 1 : 0);
       let bx = lerp(wd.sx, wd.tx, a), by = lerp(wd.sy, wd.ty, a);
       /* ambient float, always drifting once the cloud has settled */
       if (settle > 0) { bx += Math.sin(t * wd.f1 + wd.p1) * wd.ax * settle; by += Math.cos(t * wd.f2 + wd.p2) * wd.ay * settle; }
@@ -155,9 +171,9 @@
         wd.ox += wd.vx; wd.oy += wd.vy;
       }
       wd.el.style.opacity = String(op);
-      wd.el.style.transform = 'translate3d(' + (bx + wd.ox) + 'px,' + (by + wd.oy) + 'px,0) scale(' + (wd.s0 + (1 - wd.s0) * a) + ')';
+      wd.el.style.transform = 'translate3d(' + (bx + wd.ox) + 'px,' + (by + wd.oy) + 'px,0) rotate(' + (wd.rot0 * (1 - a)) + 'deg) scale(' + (wd.s0 + (1 - wd.s0) * a) + ')';
       /* the word has left its post, so the post's own text is hollowed out */
-      if (wd.span && !reduce) { const v = op > 0.5 ? 0 : 1; if (v !== wd.lastSp) { wd.span.style.opacity = String(v); wd.lastSp = v; } }
+      if (wd.span && !reduce) { const v = op > 0 ? 0 : 1; if (v !== wd.lastSp) { wd.span.style.opacity = String(v); wd.lastSp = v; } }
     }
     ptr.burst *= 0.93; if (ptr.burst < 0.01) ptr.burst = 0;
     return alive;
@@ -189,6 +205,7 @@
   stage.addEventListener('pointercancel', leave);
   stage.addEventListener('touchend', () => setTimeout(leave, 350), { passive: true });
 
+  if (!reduce) setTimeout(() => forum.classList.add('on'), 2300);
   let rt = 0;
   function rebuild() { measureScene(); layoutWords(); readScroll(); request(); }
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(rebuild, 120); });
@@ -198,51 +215,56 @@
   ready.then(rebuild);
   window.addEventListener('load', rebuild);
 
-  /* ---------- menu (pill organizer tabs) ---------- */
-  const tabs = Array.from(document.querySelectorAll('.lid'));
+  /* ---------- analyses: one at a time, a "next" link at the bottom, the top menu shows where we are ---------- */
   const panels = Array.from(document.querySelectorAll('.panel'));
-  function select(i, focus, push) {
-    tabs.forEach((t, j) => { const on = i === j; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; panels[j].hidden = !on; });
+  const panelsEl = $('panels');
+  let cur = 0;
+  function select(i, push) {
+    cur = i;
+    panels.forEach((p, j) => { p.hidden = i !== j; });
     document.dispatchEvent(new CustomEvent('panelshown', { detail: i }));
-    if (focus) tabs[i].focus();
-    if (push) history.replaceState(null, '', '#' + tabs[i].dataset.hash);
+    if (push) history.replaceState(null, '', '#' + panels[i].dataset.hash);
   }
-  tabs.forEach((t, i) => {
-    t.addEventListener('click', () => select(i, false, true));
-    t.addEventListener('keydown', (e) => {
-      const n = tabs.length; let j = null;
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') j = (i + 1) % n;
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') j = (i + n - 1) % n;
-      if (e.key === 'Home') j = 0; if (e.key === 'End') j = n - 1;
-      if (j !== null) { e.preventDefault(); select(j, true, true); }
-    });
+  const toPanels = () => panelsEl.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  panels.forEach((p, i) => {
+    const nx = p.querySelector('[data-next]');
+    if (nx) nx.addEventListener('click', () => { select(i + 1, true); toPanels(); });
   });
-  /* ---------- top menu: a paper strip that arrives once the intro is over ---------- */
+
+  /* ---------- top menu: a plain paper strip that arrives once the intro is over ---------- */
   const nav = $('topnav');
   const navBtns = [];
+  let briefLink = null;
   if (nav) {
-    const brief = document.createElement('a'); brief.href = '#brief'; brief.className = 'tn tn-brief'; brief.textContent = 'Brief';
-    nav.appendChild(brief);
+    const mark = document.createElement('a'); mark.href = '#brief'; mark.className = 'tn-mark'; mark.textContent = 'HIV Treatment Discussions';
+    nav.appendChild(mark);
     const strip = document.createElement('div'); strip.className = 'tn-tabs'; nav.appendChild(strip);
-    tabs.forEach((t, i) => {
+    briefLink = document.createElement('a'); briefLink.href = '#brief'; briefLink.className = 'tn'; briefLink.textContent = 'Brief'; strip.appendChild(briefLink);
+    panels.forEach((p, i) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'tn';
-      b.textContent = t.querySelector('.lid-top').textContent;
-      b.addEventListener('click', () => {
-        select(i, false, true);
-        document.getElementById('panels').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-      });
+      b.textContent = p.dataset.title;
+      b.addEventListener('click', () => { select(i, true); toPanels(); });
       strip.appendChild(b); navBtns.push(b);
     });
-    const showNav = () => {
-      const on = window.scrollY > landing.offsetTop + landing.offsetHeight - window.innerHeight * 0.6;
-      nav.classList.toggle('on', on); doc.classList.toggle('nav-on', on);
-    };
-    window.addEventListener('scroll', showNav, { passive: true }); showNav();
   }
-  document.addEventListener('panelshown', (e) => {
-    navBtns.forEach((b, j) => { if (j === e.detail) { b.setAttribute('aria-current', 'page'); const st = b.parentNode; st.scrollTo({ left: b.offsetLeft - 12, behavior: 'auto' }); } else b.removeAttribute('aria-current'); });
+  function markCurrent() {
+    const inBrief = panelsEl.getBoundingClientRect().top > window.innerHeight * 0.5;
+    if (briefLink) { if (inBrief) briefLink.setAttribute('aria-current', 'page'); else briefLink.removeAttribute('aria-current'); }
+    navBtns.forEach((b, j) => { if (!inBrief && j === cur) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  }
+  function showNav() {
+    if (!nav) return;
+    const on = window.scrollY > landing.offsetTop + landing.offsetHeight - window.innerHeight * 0.6;
+    nav.classList.toggle('on', on); doc.classList.toggle('nav-on', on);
+    markCurrent();
+  }
+  window.addEventListener('scroll', showNav, { passive: true });
+  document.addEventListener('panelshown', () => {
+    markCurrent();
+    const b = navBtns[cur]; if (b) b.parentNode.scrollTo({ left: b.offsetLeft - 12, behavior: 'auto' });
   });
-  select(0, false, false);
-  const h = location.hash.slice(1), hi = tabs.findIndex((t) => t.dataset.hash === h);
-  if (hi >= 0) { select(hi, false, false); document.getElementById('menu').scrollIntoView(); }
+  select(0, false);
+  showNav();
+  const h = location.hash.slice(1), hi = panels.findIndex((p) => p.dataset.hash === h);
+  if (hi >= 0) { select(hi, false); panelsEl.scrollIntoView(); }
 })();
