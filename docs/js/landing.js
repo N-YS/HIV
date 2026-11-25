@@ -10,7 +10,7 @@
   const $ = (id) => document.getElementById(id);
   const landing = $('landing'), stage = $('stage'), comp = $('computer'), screenEl = $('screenRect');
   const hv = $('hv'), hti = $('hti'), badge = $('badge');
-  const forum = $('forum'), cloud = $('cloud'), hiv = $('hiv'), hint = $('hint');
+  const forum = $('forum'), cloud = $('cloud'), hiv = $('hiv'), hint = $('hint'), best = $('best');
   const PAL = ['#673141', '#4d5f2a', '#5B7396', '#7a5a8a', '#8E2F4A'];
   /* cloud words are lifted from the keyword spans inside the real posts: one word per distinct keyword */
   const wordEls = [];
@@ -131,6 +131,7 @@
       comp.style.transform = 'translate3d(' + (z * dxT) + 'px,' + (z * dyT) + 'px,0) scale(' + sc + ')';
       comp.parentNode.style.visibility = p > 0.36 ? 'hidden' : 'visible';
       hint.style.opacity = String(1 - smooth(0, 0.05, p));
+      if (best) best.style.opacity = String(1 - smooth(0, 0.05, p));
       hint.style.animation = p > 0.0005 ? 'none' : '';
       /* the forum is the computer's screen: same layer, carried along by the zoom */
       forum.style.transform = 'translate3d(' + ((scx - vw / 2) * (1 - z)) + 'px,' + ((scy - vh / 2) * (1 - z)) + 'px,0) scale(' + (sc * fitM) + ')';
