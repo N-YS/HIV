@@ -10,7 +10,7 @@
   const $ = (id) => document.getElementById(id);
   const landing = $('landing'), stage = $('stage'), comp = $('computer'), screenEl = $('screenRect');
   const hv = $('hv'), hti = $('hti'), badge = $('badge');
-  const forum = $('forum'), cloud = $('cloud'), hiv = $('hiv'), hint = $('hint'), best = $('best');
+  const forum = $('forum'), cloud = $('cloud'), hiv = $('hiv'), hint = $('hint');
   const PAL = ['#673141', '#4d5f2a', '#5B7396', '#7a5a8a', '#8E2F4A'];
   /* cloud words are lifted from the keyword spans inside the real posts: one word per distinct keyword */
   const wordEls = [];
@@ -131,7 +131,6 @@
       comp.style.transform = 'translate3d(' + (z * dxT) + 'px,' + (z * dyT) + 'px,0) scale(' + sc + ')';
       comp.parentNode.style.visibility = p > 0.36 ? 'hidden' : 'visible';
       hint.style.opacity = String(1 - smooth(0, 0.05, p));
-      if (best) best.style.opacity = String(1 - smooth(0, 0.05, p));
       hint.style.animation = p > 0.0005 ? 'none' : '';
       /* the forum is the computer's screen: same layer, carried along by the zoom */
       forum.style.transform = 'translate3d(' + ((scx - vw / 2) * (1 - z)) + 'px,' + ((scy - vh / 2) * (1 - z)) + 'px,0) scale(' + (sc * fitM) + ')';
@@ -239,7 +238,16 @@
   if (nav) {
     const mark = document.createElement('a'); mark.href = '#brief'; mark.className = 'tn-mark'; mark.textContent = 'HIV Treatment Discussions';
     nav.appendChild(mark);
-    const strip = document.createElement('div'); strip.className = 'tn-tabs'; nav.appendChild(strip);
+    const cur0 = document.createElement('span'); cur0.className = 'tn-cur'; cur0.id = 'tnCur'; nav.appendChild(cur0);
+    const burger = document.createElement('button'); burger.type = 'button'; burger.className = 'tn-burger'; burger.setAttribute('aria-label', 'Menu'); burger.setAttribute('aria-expanded', 'false'); burger.setAttribute('aria-controls', 'tnTabs');
+    burger.innerHTML = '<svg viewBox="0 0 22 18" aria-hidden="true"><path d="M2 3 C 7 2, 14 4, 20 2.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M2 9.5 C 8 8.5, 14 10.5, 20 9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M2 15.5 C 7 14.5, 14 16.5, 20 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+    nav.appendChild(burger);
+    const setOpen = (o) => { nav.classList.toggle('open', o); burger.setAttribute('aria-expanded', o ? 'true' : 'false'); };
+    burger.addEventListener('click', () => setOpen(!nav.classList.contains('open')));
+    document.addEventListener('pointerdown', (e) => { if (nav.classList.contains('open') && !nav.contains(e.target)) setOpen(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+    nav.addEventListener('click', (e) => { if (e.target.closest('.tn')) setOpen(false); });
+    const strip = document.createElement('div'); strip.className = 'tn-tabs'; strip.id = 'tnTabs'; nav.appendChild(strip);
     briefLink = document.createElement('a'); briefLink.href = '#brief'; briefLink.className = 'tn'; briefLink.textContent = 'Brief'; strip.appendChild(briefLink);
     panels.forEach((p, i) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'tn';
@@ -251,6 +259,7 @@
   function markCurrent() {
     const inBrief = panelsEl.getBoundingClientRect().top > window.innerHeight * 0.5;
     if (briefLink) { if (inBrief) briefLink.setAttribute('aria-current', 'page'); else briefLink.removeAttribute('aria-current'); }
+    const tc = document.getElementById('tnCur'); if (tc) tc.textContent = inBrief ? 'Brief' : (panels[cur] ? panels[cur].dataset.title : '');
     navBtns.forEach((b, j) => { if (!inBrief && j === cur) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   }
   function showNav() {
