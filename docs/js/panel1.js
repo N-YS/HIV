@@ -307,15 +307,16 @@
   document.fonts && document.fonts.ready && document.fonts.ready.then(() => charts.forEach((c) => c.clientWidth && draw(c)));
 
   /* ---------------- the shutter, thread, pencil, parallax ---------------- */
-  const shutter = root.querySelector('#shutter'), slats = root.querySelector('#slats'), shop = root.querySelector('.shop');
-  const caps = Array.from(root.querySelectorAll('.cap'));
+  const shutter = document.querySelector('#shutter'), slats = document.querySelector('#slats'), shop = document.querySelector('#shutter .shop');
+  const caps = Array.from(document.querySelectorAll('#shutter .cap'));
+  const closeEl = root.querySelector('.close');
   const pars = Array.from(root.querySelectorAll('[data-par]'));
   const thread = root.querySelector('#thread'), tpath = root.querySelector('#threadPath'), treveal = root.querySelector('#threadReveal'), pencil = root.querySelector('#pencil');
   const OPEN_H = 292;
   let tlen = 0, tw = 0, th = 0;
 
   function buildThread() {
-    const w = root.offsetWidth, h = root.offsetHeight;
+    const w = root.offsetWidth, h = root.offsetHeight - (closeEl ? closeEl.offsetHeight : 0);
     if (!w || !h) return;
     tw = w; th = h;
     thread.setAttribute('viewBox', `0 0 ${w} ${h}`);
@@ -333,9 +334,10 @@
   let ticking = false;
   function update() {
     ticking = false;
-    if (!root.offsetParent) return;
-    const vh = window.innerHeight, rect = root.getBoundingClientRect();
-    if (Math.abs(rect.height - th) > 4 || Math.abs(rect.width - tw) > 4) buildThread();
+    const vh = window.innerHeight;
+    if (!root.offsetParent) { updateShutter(vh); return; }
+    const rect = root.getBoundingClientRect();
+    if (Math.abs(rect.height - (closeEl ? closeEl.offsetHeight : 0) - th) > 4 || Math.abs(rect.width - tw) > 4) buildThread();
 
     /* parallax: background drawings drift a little against the scroll */
     if (!reduce) pars.forEach((p) => {
@@ -345,7 +347,7 @@
 
     /* thread and pencil: the dashed line is revealed through a mask that the pencil "draws" */
     if (tlen && !reduce) {
-      const prog = clamp((vh * 0.55 - rect.top) / Math.max(1, rect.height));
+      const prog = clamp((vh * 0.55 - rect.top) / Math.max(1, th));
       const L = tlen * prog;
       treveal.style.strokeDasharray = tlen + ' ' + (tlen + 50);
       treveal.style.strokeDashoffset = (tlen - L).toFixed(1);
@@ -357,6 +359,9 @@
       } else pencil.style.opacity = 0;
     }
 
+    updateShutter(vh);
+  }
+  function updateShutter(vh) {
     /* shutter: pinned scroll scene */
     if (shutter) {
       const sr = shutter.getBoundingClientRect(), span = sr.height - vh;

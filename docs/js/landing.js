@@ -10,6 +10,10 @@
   const $ = (id) => document.getElementById(id);
   const landing = $('landing'), stage = $('stage'), comp = $('computer'), screenEl = $('screenRect');
   const hv = $('hv'), hti = $('hti'), badge = $('badge');
+  const sblue = $('sblue'), briefEl = $('brief'), briefText = $('briefText');
+  const brief2 = $('brief2'), b2Text = $('b2Text'), b2f1 = $('b2f1'), b2f2 = $('b2f2'), b2cap = $('b2cap'), b2Next = $('b2Next');
+  const P1 = 0.72;   // the first 72% of the scroll is the zoom and the cloud; the rest fades the cloud into the brief
+  let qv = reduce ? 1 : 0;
   const forum = $('forum'), cloud = $('cloud'), hiv = $('hiv'), hint = $('hint');
   const PAL = ['#673141', '#4d5f2a', '#5B7396', '#7a5a8a', '#8E2F4A'];
   /* cloud words are lifted from the keyword spans inside the real posts: one word per distinct keyword */
@@ -30,6 +34,7 @@
     });
   })();
 
+  if (reduce) { briefEl.classList.add('brief-static'); landing.after(briefEl); }
   const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
   const smooth = (a, b, p) => { const t = clamp((p - a) / (b - a)); return t * t * (3 - 2 * t); };
   const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -135,6 +140,7 @@
       /* the forum is the computer's screen: same layer, carried along by the zoom */
       forum.style.transform = 'translate3d(' + ((scx - vw / 2) * (1 - z)) + 'px,' + ((scy - vh / 2) * (1 - z)) + 'px,0) scale(' + (sc * fitM) + ')';
       forum.style.borderRadius = (1 - z) * 30 + 'px';
+      sblue.style.opacity = String(smooth(0.32, 0.4, p));
       forum.style.visibility = p < 0.68 ? 'visible' : 'hidden';
       forum.style.setProperty('--tx', String(smooth(0.2, 0.32, p)));        // scribbles turn into the real words
       forum.style.setProperty('--bf', String(1 - smooth(0.4, 0.58, p)));     // bubbles fade out in one continuous move, the keywords stay
@@ -143,14 +149,36 @@
       if (p > 0.02) forum.classList.add('on');
     }
     const ho = smooth(0.64, 0.8, p);
-    hiv.style.opacity = String(ho);
+    const out = reduce ? 0 : smooth(P1, P1 + 0.06, qv);                 // the cloud and the title fade away into the brief
+    hiv.style.opacity = String(ho * (1 - out));
+    cloud.style.opacity = String(1 - out);
+    if (!reduce) {
+      const sh = (el, a, b) => { const v = smooth(a, b, qv); el.style.opacity = String(v); el.style.transform = 'translate3d(0,' + ((1 - v) * 22) + 'px,0)'; };
+      briefEl.style.visibility = qv > P1 + 0.02 ? 'visible' : 'hidden';
+      { const v = smooth(P1 + 0.04, P1 + 0.1, qv) * (1 - smooth(0.9, 0.97, qv)); briefText.style.opacity = String(v); briefText.style.transform = 'translate3d(0,' + ((1 - smooth(P1 + 0.04, P1 + 0.1, qv)) * 22) + 'px,0)'; }   // the first paragraph arrives, then leaves for the storefront
+    }
     hiv.style.transform = 'translate3d(' + (hivBox.cx - hivBox.w / 2) + 'px,' + (hivBox.cy - hivBox.h / 2) + 'px,0) scale(' + (0.75 + 0.25 * ho) + ')';
     hiv.style.transformOrigin = '50% 50%';
   }
 
+  /* second half of the brief: the storefront comes first, then this pinned scene (text, then the two diagrams) */
+  function drawBrief2() {
+    if (reduce || !brief2) return;
+    const r = brief2.getBoundingClientRect(), span = r.height - window.innerHeight;
+    const q = clamp(-r.top / Math.max(1, span));
+    const sh = (el, a, b, hold) => { const v = smooth(a, b, q); el.style.opacity = String(hold === undefined ? v : Math.min(v, 1 - smooth(hold, hold + 0.07, q))); el.style.transform = 'translate3d(0,' + ((1 - v) * 22) + 'px,0)'; };
+    sh(b2Text, 0.06, 0.16, 0.4);      // the paragraph, which leaves before any diagram shows
+    sh(b2f1, 0.56, 0.64);
+    sh(b2f2, 0.68, 0.76);
+    sh(b2cap, 0.78, 0.84);
+    sh(b2Next, 0.88, 0.95);
+  }
+  window.addEventListener('scroll', drawBrief2, { passive: true });
+  window.addEventListener('resize', drawBrief2);
+
   let now = 0;
   function placeWords(p, step) {
-    const active = p > 0.84 && !reduce;
+    const active = p > 0.84 && qv < P1 && !reduce;
     const R = Math.max(110, Math.min(vw, vh) * 0.22) * (1 + ptr.burst * 0.9);
     const settle = reduce ? 0 : smooth(0.74, 0.86, p);
     const t = now / 1000;
@@ -192,7 +220,8 @@
   function readScroll() {
     if (reduce) return;
     const top = landing.offsetTop, span = landing.offsetHeight - window.innerHeight;
-    progress = clamp((window.scrollY - top) / Math.max(1, span));
+    qv = clamp((window.scrollY - top) / Math.max(1, span));
+    progress = clamp(qv / P1);
     request();
   }
   if ('IntersectionObserver' in window) new IntersectionObserver((es) => { inView = es[0].isIntersecting; if (inView) request(); }, { threshold: 0 }).observe(landing);
@@ -225,11 +254,22 @@
     document.dispatchEvent(new CustomEvent('panelshown', { detail: i }));
     if (push) history.replaceState(null, '', '#' + panels[i].dataset.hash);
   }
-  const toPanels = () => panelsEl.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  const menuEl = $('menu');
+  /* the analyses are their own page: the intro (landing, brief, map) is hidden while they are open */
+  const reveal = () => { if (menuEl.hidden) menuEl.hidden = false; if (!doc.classList.contains('in-analyses')) { doc.classList.add('in-analyses'); document.body.classList.add('in-analyses'); } showNav(); };
+  const toPanels = () => { reveal(); window.scrollTo(0, 0); };
+  function toBriefEnd() { window.scrollTo(0, brief2.offsetTop + brief2.offsetHeight - (reduce ? 0 : window.innerHeight)); }
+  function toIntro(id) {
+    document.body.classList.remove('in-analyses'); doc.classList.remove('in-analyses'); menuEl.hidden = true;
+    history.replaceState(null, '', '#' + (id || 'brief'));
+    window.dispatchEvent(new Event('resize'));
+    if (!id || id === 'brief') toBriefEnd(); else { const el = $(id); if (el) el.scrollIntoView(); } showNav();
+  }
   panels.forEach((p, i) => {
     const nx = p.querySelector('[data-next]');
     if (nx) nx.addEventListener('click', () => { select(i + 1, true); toPanels(); });
   });
+
 
   /* ---------- top menu: a plain paper strip that arrives once the intro is over ---------- */
   const nav = $('topnav');
@@ -257,14 +297,14 @@
     });
   }
   function markCurrent() {
-    const inBrief = panelsEl.getBoundingClientRect().top > window.innerHeight * 0.5;
+    const inBrief = menuEl.hidden;
     if (briefLink) { if (inBrief) briefLink.setAttribute('aria-current', 'page'); else briefLink.removeAttribute('aria-current'); }
     const tc = document.getElementById('tnCur'); if (tc) tc.textContent = inBrief ? 'Brief' : (panels[cur] ? panels[cur].dataset.title : '');
     navBtns.forEach((b, j) => { if (!inBrief && j === cur) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   }
   function showNav() {
     if (!nav) return;
-    const on = window.scrollY > landing.offsetTop + landing.offsetHeight - window.innerHeight * 0.6;
+    const on = document.body.classList.contains('in-analyses') || window.scrollY > landing.offsetTop + (landing.offsetHeight - window.innerHeight) * (reduce ? 0.2 : 0.74);
     nav.classList.toggle('on', on); doc.classList.toggle('nav-on', on);
     markCurrent();
   }
@@ -274,7 +314,11 @@
     const b = navBtns[cur]; if (b) b.parentNode.scrollTo({ left: b.offsetLeft - 12, behavior: 'auto' });
   });
   select(0, false);
+  const goIntro = (e) => { e.preventDefault(); toIntro('brief'); };
+  if (briefLink) briefLink.addEventListener('click', goIntro);
+  const nm = nav.querySelector('.tn-mark'); if (nm) nm.addEventListener('click', goIntro);
   showNav();
   const h = location.hash.slice(1), hi = panels.findIndex((p) => p.dataset.hash === h);
-  if (hi >= 0) { select(hi, false); panelsEl.scrollIntoView(); }
+  const go = $('introNext'); if (go) go.addEventListener('click', () => { select(0, true); toPanels(); });
+  if (hi >= 0) { select(hi, false); reveal(); window.scrollTo(0, 0); }
 })();
