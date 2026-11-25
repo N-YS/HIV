@@ -164,6 +164,40 @@
       const t = mk('text', { x: (bx0 + bx1) / 2, y: by - 7, 'text-anchor': 'middle', 'font-size': fs, 'font-style': 'italic' }, g);
       t.textContent = 'Jan 2024 – Feb 2025';
     }
+
+    /* hover: the exact weekly counts */
+    (function () {
+      const g = mk('g', { 'pointer-events': 'none', opacity: 0 }, svg);
+      const gl = mk('path', { stroke: INKD, 'stroke-width': 1.2, 'stroke-dasharray': '2 4', fill: 'none', opacity: 0.7 }, g);
+      const dc = mk('circle', { r: 4.2, fill: '#673141', stroke: '#FFFDF5', 'stroke-width': 1.6 }, g);
+      const dp = mk('circle', { r: 4.2, fill: '#C18A1E', stroke: '#FFFDF5', 'stroke-width': 1.6 }, g);
+      const bx = mk('rect', { rx: 6, fill: '#FFFDF5', stroke: INKD, 'stroke-width': 1.6 }, g);
+      const t1 = mk('text', { 'font-size': fs, 'font-style': 'italic' }, g), t2 = mk('text', { 'font-size': fs, 'font-weight': 600 }, g), t3 = mk('text', { 'font-size': fs, 'font-weight': 600 }, g);
+      t2.style.fill = '#673141'; t3.style.fill = '#8a5a0c';
+      const n = d.comments.length;
+      const hit = mk('rect', { x: m.l, y: m.t - 10, width: W - m.l - m.r, height: H - m.t - m.b + 10, fill: 'transparent' }, svg);
+      const mv = (e) => {
+        const b = svg.getBoundingClientRect(), sc = W / b.width, px = (e.clientX - b.left) * sc;
+        const yr = A.xdomain[0] + ((px - m.l) / (W - m.l - m.r)) * (A.xdomain[1] - A.xdomain[0]);
+        const k = Math.max(0, Math.min(n - 1, Math.round((yr - A.weekStart) / A.weekStep)));
+        const x = X(yearOf(k)), c = d.comments[k], q = d.posts[k];
+        const dt = new Date(Date.UTC(Math.floor(yearOf(k)), 0, 1) + (yearOf(k) % 1) * 365.25 * 864e5);
+        t1.textContent = 'week of ' + monthName[dt.getUTCMonth()] + ' ' + dt.getUTCDate() + ', ' + dt.getUTCFullYear();
+        t2.textContent = 'Comments ' + Math.round(c).toLocaleString('en-US'); t3.textContent = 'Posts ' + Math.round(q).toLocaleString('en-US');
+        const w = Math.max(t1.getComputedTextLength(), t2.getComputedTextLength(), t3.getComputedTextLength()) + 20, h = fs * 3 + 24;
+        let bxx = x + 14; if (bxx + w > W - 4) bxx = x - 14 - w;
+        const byy = Math.max(4, m.t - 6);
+        bx.setAttribute('x', bxx); bx.setAttribute('y', byy); bx.setAttribute('width', w); bx.setAttribute('height', h);
+        t1.setAttribute('x', bxx + 10); t1.setAttribute('y', byy + fs + 5);
+        t2.setAttribute('x', bxx + 10); t2.setAttribute('y', byy + fs * 2 + 10);
+        t3.setAttribute('x', bxx + 10); t3.setAttribute('y', byy + fs * 3 + 14);
+        gl.setAttribute('d', `M${f1(x)} ${f1(Y(0))} L${f1(x)} ${f1(Y(d.ylim))}`);
+        dc.setAttribute('cx', x); dc.setAttribute('cy', Y(Math.min(c, d.ylim))); dp.setAttribute('cx', x); dp.setAttribute('cy', Y(Math.min(q, d.ylim)));
+        g.setAttribute('opacity', 1);
+      };
+      hit.addEventListener('pointermove', mv); hit.addEventListener('pointerdown', mv);
+      hit.addEventListener('pointerleave', () => g.setAttribute('opacity', 0));
+    })();
     finish(host);
   }
 
@@ -349,8 +383,9 @@
     if (tlen && !reduce) {
       const prog = clamp((vh * 0.55 - rect.top) / Math.max(1, th));
       const L = tlen * prog;
-      treveal.style.strokeDasharray = tlen + ' ' + (tlen + 50);
-      treveal.style.strokeDashoffset = (tlen - L).toFixed(1);
+      /* the dots are drawn only up to the pencil: the dash pattern itself grows and shrinks, so scrolling back up erases the line exactly as it was drawn */
+      const n = Math.floor(L / 11), rem = L - n * 11;
+      tpath.style.strokeDasharray = '2 9 '.repeat(n) + (rem > 0.2 ? Math.min(2, rem).toFixed(1) + ' ' : '0 ') + (tlen + 60);
       if (prog > 0.003 && prog < 0.995) {
         const pt = tpath.getPointAtLength(L), pt2 = tpath.getPointAtLength(Math.min(tlen, L + 6));
         const ang = Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180 / Math.PI;
@@ -378,6 +413,7 @@
   window.addEventListener('scroll', req, { passive: true });
   window.addEventListener('resize', () => { buildThread(); req(); });
   document.addEventListener('panelshown', () => setTimeout(() => { buildThread(); req(); }, 30));
+  tpath.removeAttribute('mask');
   buildThread(); req();
   window.addEventListener('load', () => { buildThread(); req(); });
   if (reduce) document.documentElement.classList.add('reduce');

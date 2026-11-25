@@ -12,7 +12,7 @@
   const hv = $('hv'), hti = $('hti'), badge = $('badge');
   const sblue = $('sblue'), briefEl = $('brief'), briefText = $('briefText');
   const brief2 = $('brief2'), b2Text = $('b2Text'), b2f1 = $('b2f1'), b2f2 = $('b2f2'), b2cap = $('b2cap'), b2Next = $('b2Next');
-  const P1 = 0.72;   // the first 72% of the scroll is the zoom and the cloud; the rest fades the cloud into the brief
+  const P1 = 0.65;   // the first 72% of the scroll is the zoom and the cloud; the rest fades the cloud into the brief
   let qv = reduce ? 1 : 0;
   const forum = $('forum'), cloud = $('cloud'), hiv = $('hiv'), hint = $('hint');
   const PAL = ['#673141', '#4d5f2a', '#5B7396', '#7a5a8a', '#8E2F4A'];
@@ -149,13 +149,13 @@
       if (p > 0.02) forum.classList.add('on');
     }
     const ho = smooth(0.64, 0.8, p);
-    const out = reduce ? 0 : smooth(P1, P1 + 0.06, qv);                 // the cloud and the title fade away into the brief
+    const out = reduce ? 0 : smooth(P1, P1 + 0.1, qv);                 // the cloud and the title fade away into the brief
     hiv.style.opacity = String(ho * (1 - out));
     cloud.style.opacity = String(1 - out);
     if (!reduce) {
       const sh = (el, a, b) => { const v = smooth(a, b, qv); el.style.opacity = String(v); el.style.transform = 'translate3d(0,' + ((1 - v) * 22) + 'px,0)'; };
-      briefEl.style.visibility = qv > P1 + 0.02 ? 'visible' : 'hidden';
-      { const v = smooth(P1 + 0.04, P1 + 0.1, qv) * (1 - smooth(0.9, 0.97, qv)); briefText.style.opacity = String(v); briefText.style.transform = 'translate3d(0,' + ((1 - smooth(P1 + 0.04, P1 + 0.1, qv)) * 22) + 'px,0)'; }   // the first paragraph arrives, then leaves for the storefront
+      briefEl.style.visibility = qv > P1 + 0.08 ? 'visible' : 'hidden';
+      { const vin = smooth(P1 + 0.12, P1 + 0.2, qv), v = vin * (1 - smooth(0.93, 0.985, qv)); briefText.style.opacity = String(v); briefText.style.transform = 'translate3d(0,' + ((1 - vin) * 22) + 'px,0)'; }   // the first paragraph arrives, then leaves for the storefront
     }
     hiv.style.transform = 'translate3d(' + (hivBox.cx - hivBox.w / 2) + 'px,' + (hivBox.cy - hivBox.h / 2) + 'px,0) scale(' + (0.75 + 0.25 * ho) + ')';
     hiv.style.transformOrigin = '50% 50%';

@@ -29,7 +29,7 @@
   function buildTable(host, sub) {
     const T = D.TW[sub];
     const inB = new Set(T.before.map((x) => x[0])), inA = new Set(T.after.map((x) => x[0]));
-    let h = '<div class="kw-th"></div><div class="kw-th">before 2024</div><div class="kw-th">from Mar 2025</div>';
+    let h = '<div class="kw-th"></div><div class="kw-th">before 2024</div><div class="kw-th">Mar 2025 and after</div>';
     for (let i = 0; i < 10; i++) {
       const b = T.before[i], a = T.after[i];
       h += `<div class="kw-rk">${i + 1}</div>`;
@@ -172,6 +172,35 @@
       const t = mk('text', { x: X(x1) + 8, y: e.ly + 4.5, 'font-size': fs + 1, 'font-weight': 500 }, g); t.textContent = e.w; t.style.fill = LC[e.w];
       return g;
     });
+
+    /* hover: exact rate and counts for the quarter under the pointer */
+    (function () {
+      const g = mk('g', { 'pointer-events': 'none', opacity: 0 }, svg);
+      const gl = mk('path', { stroke: INKD, 'stroke-width': 1.2, 'stroke-dasharray': '2 4', fill: 'none', opacity: 0.7, d: `M0 ${f1(Y(0))} L0 ${f1(Y(ymax))}` }, g);
+      const bx = mk('rect', { rx: 6, fill: '#FFFDF5', stroke: INKD, 'stroke-width': 1.6 }, g);
+      const rows = [mk('text', { 'font-size': fs, 'font-style': 'italic' }, g)].concat(D.words.map((w) => { const t = mk('text', { 'font-size': fs, 'font-weight': 600 }, g); t.style.fill = LC[w]; return t; }));
+      const foot = mk('text', { 'font-size': fs - 2, 'font-style': 'italic', opacity: 0.8 }, g);
+      const dots = D.words.map((w) => mk('circle', { r: 4.4, fill: LC[w], stroke: '#FFFDF5', 'stroke-width': 1.6 }, g));
+      const hit = mk('rect', { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent' }, svg);
+      const qn = ['Jan\u2013Mar', 'Apr\u2013Jun', 'Jul\u2013Sep', 'Oct\u2013Dec'];
+      const mv = (e) => {
+        const b = svg.getBoundingClientRect(), sc = W / b.width, px = (e.clientX - b.left) * sc;
+        let bi = 0, bd = 1e9; qs.forEach((q, i) => { const dd = Math.abs(X(q.t) - px); if (dd < bd) { bd = dd; bi = i; } });
+        const q = qs[bi], x = X(q.t), qi = Math.floor((q.t % 1) * 4), yr = Math.floor(q.t);
+        rows[0].textContent = qn[qi] + ' ' + yr;
+        D.words.forEach((w, i) => { rows[i + 1].textContent = w + ' ' + ((q[w] / q.n) * 100).toFixed(1) + ' per 100'; dots[i].setAttribute('cx', x); dots[i].setAttribute('cy', Y((q[w] / q.n) * 100)); });
+        foot.textContent = q.n.toLocaleString('en-US') + ' messages' + (q.n < 100 ? ' (fewer than 100)' : '');
+        const all = rows.concat([foot]); const w = Math.max.apply(null, all.map((t) => t.getComputedTextLength())) + 22, h = (rows.length + 1) * (fs + 4) + 14;
+        let bxx = x + 14; if (bxx + w > W - 4) bxx = x - 14 - w;
+        const byy = m.t;
+        bx.setAttribute('x', bxx); bx.setAttribute('y', byy); bx.setAttribute('width', w); bx.setAttribute('height', h);
+        all.forEach((t, i) => { t.setAttribute('x', bxx + 11); t.setAttribute('y', byy + (i + 1) * (fs + 4) + 2); });
+        gl.setAttribute('transform', `translate(${f1(x)},0)`);
+        g.setAttribute('opacity', 1);
+      };
+      hit.addEventListener('pointermove', mv); hit.addEventListener('pointerdown', mv);
+      hit.addEventListener('pointerleave', () => g.setAttribute('opacity', 0));
+    })();
     /* the pen edge and its date */
     const edge = mk('g', { opacity: 0 }, svg);
     mk('path', { d: `M0 ${f1(Y(ymax))} L0 ${f1(Y(0))}`, stroke: INKD, 'stroke-width': 1.3, 'stroke-dasharray': '2 5', 'stroke-linecap': 'round', opacity: 0.8 }, edge);
@@ -237,8 +266,8 @@
   D.topics.forEach((t, k) => {
     const row = document.createElement('div'); row.className = 'trow'; row.dataset.t = k;
     row.innerHTML = pillHTML(k) + `<span class="tt"><i>${t.kw}</i></span>` +
-      `<span class="bar" style="--w:0%;--c:${TC[k]};--oc:${TOL[k]}"><em data-l="HIV "></em></span>` +
-      `<span class="bar" style="--w:0%;--c:${TC[k]};--oc:${TOL[k]}"><em data-l="hivaids "></em></span>`;
+      `<span class="bp"><span class="bar b1" style="--w:0%;--c:${TC[k]};--oc:${TOL[k]}"><em data-l="r/HIV "></em></span>` +
+      `<span class="bar b2" style="--w:0%;--c:${TC[k]};--oc:${TOL[k]}"><em data-l="r/hivaids "></em></span></span>`;
     row.addEventListener('pointerenter', () => highlightRow(k));
     row.addEventListener('pointerleave', () => highlightRow(-1));
     cmpRows.appendChild(row); bars.push(row.querySelectorAll('.bar'));

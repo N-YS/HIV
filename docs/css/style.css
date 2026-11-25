@@ -16,7 +16,7 @@ body::after{content:"";position:fixed;inset:0;background:url(../assets/grain.png
 :focus-visible{outline:3px solid var(--rasp);outline-offset:3px}
 
 /* ---------- landing ---------- */
-.landing{position:relative;height:780vh;height:780svh}
+.landing{position:relative;height:860vh;height:860svh}
 .stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;touch-action:pan-y;
   background-color:var(--green);
   background-image:linear-gradient(var(--green-line) 1px,transparent 1px),linear-gradient(90deg,var(--green-line) 1px,transparent 1px);
@@ -354,7 +354,7 @@ html{scroll-padding-top:calc(var(--nav) + 6px)}
 .cmp-text{max-width:34em;margin-left:clamp(0px,3vw,40px)}
 .cmp-text p{margin:0}
 .cmp-sheet{width:min(1000px,100%);margin:6px auto 0;transform:rotate(.3deg);padding-top:12px}
-.cmp-head,.cmp .trow{display:grid;grid-template-columns:34px minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr);gap:2px 14px;align-items:center}
+.cmp-head,.cmp .trow{display:grid;grid-template-columns:34px minmax(0,1.2fr) minmax(0,1.6fr);gap:2px 14px;align-items:center}
 .cmp-head{font-style:italic;font-size:.85em;padding:0 4px 3px;border-bottom:2px solid var(--ink);margin-bottom:3px}
 .cmp .trow{cursor:default;padding:2px 4px;font-size:15px;transition:opacity .2s}
 .cmp .trow:hover{background:none}
@@ -387,7 +387,7 @@ html{scroll-padding-top:calc(var(--nav) + 6px)}
   .cmp-out{font-size:14px}
 }
 
-.methods{position:relative;z-index:1;padding:clamp(40px,7vh,80px) clamp(14px,4vw,64px) clamp(50px,9vh,100px);background:none}
+.methods{position:relative;z-index:1;padding:clamp(120px,19vh,170px) clamp(14px,4vw,64px) clamp(50px,9vh,100px);background:none}
 .methods h4{margin:0 0 8px;font-weight:400;font-size:clamp(28px,3.8vw,44px);line-height:1.05;font-style:italic}
 .methods p{margin:0;max-width:38em}
 .methods>*{margin-left:clamp(0px,3vw,40px)}
@@ -463,10 +463,10 @@ b.sr{font-weight:700}
 .bf svg text{font-weight:700}
 /* ================= analysis 2-4: light green and deep blue, alternating, both with a grid (Topic Models keeps its own look) ================= */
 :root{--navy:#476489;--paper:#F7FAFC}
-#panel-2 .kwsec,#panel-2 .joint,#panel-2 .cmp-end,#panel-3,#panel-4{background-color:var(--green);background-image:linear-gradient(var(--green-line) 1px,transparent 1px),linear-gradient(90deg,var(--green-line) 1px,transparent 1px);background-size:24px 24px;color:var(--ink)}
-#panel-2 .ln,#panel-2 .cmp{background-color:var(--navy);background-image:linear-gradient(rgba(255,255,255,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.11) 1px,transparent 1px);background-size:24px 24px;color:var(--paper)}
-#panel-2.scene{background:var(--green)}
-#panel-2 .ln h4,#panel-2 .ln p,#panel-2 .cmp h4,#panel-2 .cmp p{color:var(--paper)}
+#panel-2.scene,#panel-3,#panel-4{background-color:var(--green);background-image:linear-gradient(var(--green-line) 1px,transparent 1px),linear-gradient(90deg,var(--green-line) 1px,transparent 1px);background-size:24px 24px;background-attachment:fixed;color:var(--ink)}
+#panel-2 .kwsec,#panel-2 .joint,#panel-2 .cmp,#panel-2 .cmp-end{background:none;color:var(--ink)}
+#panel-2 .ln{background-color:var(--navy);background-image:linear-gradient(rgba(255,255,255,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.11) 1px,transparent 1px);background-size:24px 24px;background-attachment:fixed;color:var(--paper)}
+#panel-2 .ln h4,#panel-2 .ln p{color:var(--paper)}
 #panel-2 .sheet,#panel-2 .cmp-sheet,#panel-2 .kw-sheet{color:var(--ink)}
 #panel-3,#panel-4{margin-left:calc(50% - 50vw);width:100vw;max-width:100vw;border:0;border-radius:0;box-shadow:none;padding:clamp(90px,16vh,150px) clamp(18px,6vw,80px) clamp(60px,10vh,110px);min-height:70svh;overflow-x:clip}
 #panel-2 .cmp-end{padding:clamp(40px,8vh,80px) clamp(14px,4vw,64px) clamp(90px,14vh,150px)}
@@ -494,3 +494,16 @@ body.in-analyses #landing,body.in-analyses #brief,body.in-analyses #storefront,b
 .brief-b2{padding-bottom:clamp(130px,21vh,180px)}
 .brief-b2 .bcap{margin-top:12px!important}
 @media (max-width:760px){.brief-b2 .brief-figs{width:100%}.brief-b2{padding-bottom:190px}.b2-next{bottom:110px}}
+
+.cmp .bp{display:grid;gap:3px}
+.cmp .trow .bar{height:12px}
+.cmp .bar em::before{content:attr(data-l);font-size:.8em;opacity:.7;margin-right:3px}
+.cmp .bar.b2::before{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.5) 0 3px,transparent 3px 6px)}
+.cmp-key{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cmp-key i{display:inline-block;width:26px;height:11px;border:1.8px solid var(--ink);border-radius:4px;background:#8a7a9a}
+.cmp-key i.k2{margin-left:10px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.55) 0 3px,transparent 3px 6px),#8a7a9a}
+.cmp-key span{opacity:.7;margin-left:6px}
+@media (max-width:760px){.cmp-head{display:block}.cmp-head>span:first-child,.cmp-head>span:nth-child(2){display:none}.cmp .trow .bp{grid-column:2}.cmp .trow .bar{height:9px}.cmp-key span{display:none}}
+.cmp .trow{padding:4px 4px}
+#panel-2 .cmp,#panel-2 .cmp-end{background-color:var(--navy);background-image:linear-gradient(rgba(255,255,255,.11) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.11) 1px,transparent 1px);background-size:24px 24px;background-attachment:fixed;color:var(--paper)}
+#panel-2 .cmp-text h4,#panel-2 .cmp-text p{color:var(--paper)}
