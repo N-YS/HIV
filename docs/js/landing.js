@@ -322,3 +322,63 @@
   const go = $('introNext'); if (go) go.addEventListener('click', () => { select(0, true); toPanels(); });
   if (hi >= 0) { select(hi, false); reveal(); window.scrollTo(0, 0); }
 })();
+
+/* ---- takeaways: things appear and disappear as you scroll ---- */
+(function () {
+  const panel = document.getElementById('panel-4');
+  if (!panel) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const q = (s) => Array.from(panel.querySelectorAll(s));
+  const clamp = (v) => Math.max(0, Math.min(1, v));
+  const ease = (t) => 1 - Math.pow(1 - t, 3);
+  // [elements, x, y, scale, fadeOut?]
+  const items = [];
+  const add = (sel, x, y, s, extra) => q(sel).forEach((el) => items.push({ el, x, y, s, ty: 0, extra }));
+  add('.tk-title', -70, -30, 0.92);
+  add('.tk-lead', 0, 50, 1, 'marks');
+  add('.tk-a', -170, 60, 0.9);
+  add('.tk-b', 0, 150, 0.9, 'circle');
+  add('.tk-c', 170, 60, 0.9);
+  add('.tk-cols p', 0, 50, 1);
+  add('.tk-margin', 90, 0, 0.9, 'arrow');
+  add('.tk-quote', -110, 0, 0.95, 'rule');
+  add('.tk-paper', 110, 40, 0.95, 'list');
+  add('.tk-end', 0, 30, 0.6);
+  const marks = q('.tk-lead mark'), circle = panel.querySelector('.tk-circle path');
+  if (circle) { circle.setAttribute('pathLength', '1'); circle.style.strokeDasharray = '1'; }
+  q('.tk-arr path').forEach((p) => { p.setAttribute('pathLength', '1'); p.style.strokeDasharray = '1'; });
+  marks.forEach((m) => { m.style.backgroundRepeat = 'no-repeat'; });
+  function amt(top, bottom, vh, stag) {
+    const enter = clamp((vh * 0.94 - top - (stag || 0)) / (vh * 0.32));
+    const out = clamp(bottom / (vh * 0.2));
+    return Math.min(ease(enter), out);
+  }
+  let queued = false;
+  function tick() {
+    queued = false;
+    if (panel.hidden) return;
+    const vh = innerHeight;
+    items.forEach((it) => {
+      const r = it.el.getBoundingClientRect();
+      const a = reduce ? 1 : amt(r.top - it.ty, r.bottom - it.ty, vh);
+      it.ty = (1 - a) * it.y;
+      it.el.style.opacity = a;
+      it.el.style.translate = `${(1 - a) * it.x}px ${it.ty}px`;
+      it.el.style.scale = String(it.s + (1 - it.s) * a);
+      if (it.extra === 'marks') marks.forEach((m, i) => { m.style.backgroundSize = `${clamp((a - 0.45 - i * 0.15) / 0.4) * 100}% 100%`; });
+      if (it.extra === 'circle' && circle) circle.style.strokeDashoffset = String(1 - clamp((a - 0.5) / 0.5));
+      if (it.extra === 'arrow') it.el.querySelectorAll('.tk-arr path').forEach((p) => { p.style.strokeDashoffset = String(1 - clamp((a - 0.3) / 0.7)); });
+      if (it.extra === 'rule') { const bq = it.el.querySelector('blockquote'); if (bq) bq.style.borderLeftColor = `rgba(142,47,74,${clamp((a - 0.4) / 0.4)})`; }
+      if (it.extra === 'list') it.el.querySelectorAll('li').forEach((li, i) => {
+        const la = reduce ? 1 : clamp((a - 0.35 - i * 0.14) / 0.3);
+        li.style.opacity = la; li.style.translate = `${(1 - la) * 24}px 0`;
+        const s = li.querySelector('s'); if (s) s.style.textDecorationColor = `rgba(142,47,74,${clamp((a - 0.85) / 0.15)})`;
+      });
+    });
+  }
+  const req = () => { if (!queued) { queued = true; requestAnimationFrame(tick); } };
+  addEventListener('scroll', req, { passive: true });
+  addEventListener('resize', req);
+  new MutationObserver(req).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
+  req();
+})();
