@@ -147,22 +147,22 @@
       }
     }
     if (key === 'hiv') {
-      note(narrow ? 'restricted' : 'restricted,\nJan 2024 to Feb 2025', (rx0 + rx1) / 2, Y(d.ylim * 0.62), null, null, 'middle', 0, true);
+      note(narrow ? 'restricted' : 'restricted,\nJan 2024 – Feb 2025', (rx0 + rx1) / 2, Y(d.ylim * 0.62), null, null, 'middle', 0, true);
       const ry = Y(d.posts[d.posts.length ? Math.round((2025.16 - A.weekStart) / A.weekStep) : 0] || 20);
       const ji = Math.round((2026.55 - A.weekStart) / A.weekStep), jy = Y(d.comments[ji]) - 8;
       if (narrow) {
-        note('reopens,\nFeb 2025', X(2025.28), Y(d.ylim * 0.42), rx1 + 3, ry - 6, 'start', -6);
-        note('rules relax,\nJul 2026', X(2026.92), Y(d.ylim * 0.8), X(2026.55), jy, 'end', 10);
+        note('reopening,\nFeb 2025', X(2025.28), Y(d.ylim * 0.42), rx1 + 3, ry - 6, 'start', -6);
+        note('moderation relaxed,\nJuly 2026', X(2026.92), Y(d.ylim * 0.8), X(2026.55), jy, 'end', 10);
       } else {
-        note('reopens with rules,\nFeb 2025', X(2025.36), Y(d.ylim * 0.5), rx1 + 3, ry - 6, 'start', -22);
-        note('rules relax,\nJul 2026', X(2026.12) - 8, Y(d.ylim * 0.68), X(2026.52), jy, 'start', 14);
+        note('reopening with rules,\nFeb 2025', X(2025.36), Y(d.ylim * 0.5), rx1 + 3, ry - 6, 'start', -22);
+        note('moderation relaxed,\nJuly 2026', X(2026.12) - 8, Y(d.ylim * 0.68), X(2026.52), jy, 'start', 14);
       }
     } else {
       const by = Y(d.ylim * 0.9), bx0 = X(A.restricted[0]), bx1 = X(A.restricted[1]);
       const g = mk('g', { class: 'fade' }, svg);
       mk('path', { d: `M${f1(bx0)} ${f1(by + 8)} L${f1(bx0)} ${f1(by)} L${f1(bx1)} ${f1(by)} L${f1(bx1)} ${f1(by + 8)}`, fill: 'none', stroke: INK, 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
       const t = mk('text', { x: (bx0 + bx1) / 2, y: by - 7, 'text-anchor': 'middle', 'font-size': fs, 'font-style': 'italic' }, g);
-      t.textContent = narrow ? 'while r/HIV was restricted' : 'while r/HIV was restricted';
+      t.textContent = 'Jan 2024 – Feb 2025';
     }
     finish(host);
   }
@@ -236,12 +236,12 @@
     };
     if (key === 'hiv') {
       lab(narrow ? 'restricted' : 'restricted', (rx0 + rx1) / 2, Y(97) + fs + 6, INKD, fs, 'middle');
-      lab(narrow ? 'about 14%' : 'treatment topic, about 14%', X(2022.9), Y(6) + 5, '#FFFDF5', fs - 1, 'middle');
-      lab(narrow ? 'about 60%' : 'about 60% of messages', X(2025.95), Y(30), '#FFFDF5', fs + 1, 'middle');
+      lab('~14%', X(2022.9), Y(6) + 5, '#FFFDF5', fs - 1, 'middle');
+      lab('~60%', X(2025.95), Y(30), '#FFFDF5', fs + 1, 'middle');
       const jx = X(2026.5);
       mk('path', { d: wobble(r, jx, Y(100), jx, Y(0), 1.2), stroke: INKD, 'stroke-width': 1.5, 'stroke-dasharray': '2 6', 'stroke-linecap': 'round', opacity: 0.8 }, svg);
       const jt = mk('text', { x: jx - 6, y: Y(100) + fs + 6, 'text-anchor': 'end', 'font-size': fs - 1, 'font-style': 'italic' }, svg);
-      jt.textContent = narrow ? 'Jul 2026' : 'rules relax, Jul 2026';
+      jt.textContent = 'July 2026';
     }
 
     /* hover / touch: find the band under the pointer */
@@ -252,7 +252,7 @@
       fig.querySelectorAll('.pillrow').forEach((b) => b.classList.toggle('on', +b.dataset.t === k));
       if (k < 0) { readout.textContent = ''; return; }
       const sh = j == null ? null : S[j][k];
-      readout.textContent = `Topic ${k}: ${B[key].kw[k]}` + (sh == null ? '' : `. About ${Math.round(sh)}% of messages ${around(yrs[j])}.`);
+      readout.textContent = `${k}: ${B[key].kw[k]}` + (sh == null ? '' : ` \u00b7 ${Math.round(sh)}%`);
     }
     st.highlight = highlight;
     function probe(e) {
