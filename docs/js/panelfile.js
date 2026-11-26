@@ -15,7 +15,7 @@
   function makeFile(F, alias) {
   const cur = { u: alias, k: 'all', hl: -1 };
   const user = () => D.users[cur.u];
-  const kw = (i) => D.kw[i];
+  const kw = (i) => (D.kwFull || D.kw)[i];
 
   /* ---------- the typed fields ---------- */
   function fields() {
@@ -120,7 +120,7 @@
   /* ---------- exhibit C ---------- */
   function slips() {
     const u = user(), el = F.querySelector('.fl-slips');
-    el.innerHTML = u.ex.map((e, i) => `<figure class="fl-slip b-${e.sub} s${i % 4}"><figcaption>${e.sub === 'HIV' ? 'r/HIV' : 'r/hivaids'} &middot; ${e.date} &middot; ${e.kind}</figcaption><blockquote>${e.text.replace(/</g, '&lt;')}</blockquote><p class="fl-tp"><span class="fl-sw" style="background:${TC[e.topic]};border-color:${OC[e.topic]}"></span>${kw(e.topic)}</p></figure>`).join('');
+    el.innerHTML = u.ex.map((e, i) => `<figure class="fl-slip b-${e.sub} s${i % 4}"><figcaption><b>${e.sub === 'HIV' ? 'r/HIV' : 'r/hivaids'}</b> &middot; ${e.date} &middot; ${e.kind}</figcaption><blockquote>${e.text.replace(/</g, '&lt;')}</blockquote><p class="fl-tp"><span class="fl-sw" style="background:${TC[e.topic]};border-color:${OC[e.topic]}"></span>${kw(e.topic)}</p></figure>`).join('');
   }
 
   function renderAll() {
