@@ -76,7 +76,10 @@
       note.textContent = `${nf(sh)} also write in ${other}`;
       pie.sweep = sweep; pie.pen = pen; pie.note = note; pie.cx = cx; pie.cy = cy; pie.R = R; pie.W = W; pie.H = H; pie.ccx = ccx; pie.ccy = ccy;
       const sr = sheet.getBoundingClientRect(), hr = host.getBoundingClientRect();
-      pie.origin = `${f1(hr.left - sr.left + ccx)}px ${f1(hr.top - sr.top + ccy)}px`; sheet.style.transformOrigin = pie.origin;
+      /* the zoom goes into the blue "also comments" slice */
+      const bA0 = aS + P.post / P.n * Math.PI * 2, bA1 = bA0 + P.comment / P.n * Math.PI * 2, bAm = (bA0 + bA1) / 2;
+      const zx = cx + Math.cos(bAm) * R * 0.62, zy = cy + Math.sin(bAm) * R * 0.62;
+      pie.origin = `${f1(hr.left - sr.left + zx)}px ${f1(hr.top - sr.top + zy)}px`; sheet.style.transformOrigin = pie.origin;
       setSweep(pie, pie.sw == null ? 1 : pie.sw);
     }
     const pie = { sheet, render, sw: null };
@@ -140,7 +143,7 @@
   stage.querySelectorAll('.u3-chart').forEach((s) => charts.push(buildChart(s)));
 
   /* ---------- scroll ---------- */
-  const piesEl = document.getElementById('u3Pies'), chartsEl = document.getElementById('u3Charts'), cap = document.getElementById('u3Cap');
+  const wash = document.getElementById('u3Wash'), piesEl = document.getElementById('u3Pies'), chartsEl = document.getElementById('u3Charts'), cap = document.getElementById('u3Cap');
   const CAP1 = cap.textContent, CAP2 = cap.textContent;
   let capState = 1;
   function progress() {
@@ -148,17 +151,20 @@
     return span > 0 ? clamp((nav - sr.top) / span) : 1;
   }
   function apply(p) {
-    const sw = smooth(0.0, 0.14, p), pen = smooth(0.16, 0.28, p), zt = smooth(0.3, 0.56, p), cf = smooth(0.44, 0.56, p);
-    pies.forEach((pi) => {
+    const sw = smooth(0.0, 0.14, p), pen = smooth(0.16, 0.28, p), zt = smooth(0.3, 0.54, p);
+    pies.forEach((pi, i) => {
       setSweep(pi, sw);
       pi.pen && pi.pen.setAttribute('stroke-dashoffset', f1(1 - pen));
       pi.note && pi.note.setAttribute('opacity', f1(smooth(0.2, 0.3, p) * (1 - smooth(0.34, 0.42, p))));
-      const s = 1 + 6.5 * zt * zt; pi.sheet.style.transform = `scale(${s.toFixed(3)})`;
-      pi.sheet.style.opacity = String(1 - smooth(0.46, 0.58, p));
+      const s = 1 + 11 * zt * zt; pi.sheet.style.transform = `scale(${s.toFixed(3)})`;
+      /* only the first pie is zoomed; the other one leaves before the zoom starts, the zoomed one is opaque until the blue wash covers it */
+      pi.sheet.style.opacity = String(i === 0 ? 1 - smooth(0.535, 0.545, p) : 1 - smooth(0.3, 0.38, p));
     });
+    wash.style.opacity = String(smooth(0.42, 0.54, p) * (1 - smooth(0.56, 0.66, p)));
+    const cf = smooth(0.56, 0.66, p);
     piesEl.style.pointerEvents = p > 0.5 ? 'none' : '';
     chartsEl.style.opacity = String(cf); chartsEl.style.transform = `translateY(${f1((1 - cf) * 40)}px)`;
-    setReveal(charts[0], smooth(0.58, 0.78, p)); setReveal(charts[1], smooth(0.78, 0.97, p));
+    setReveal(charts[0], smooth(0.66, 0.82, p)); setReveal(charts[1], smooth(0.82, 0.98, p));
     const want = p > 0.5 ? 2 : 1;
     if (want !== capState) { capState = want; cap.textContent = want === 2 ? CAP2 : CAP1; }
   }

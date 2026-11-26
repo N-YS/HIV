@@ -753,3 +753,7 @@ body.in-analyses #landing,body.in-analyses #brief,body.in-analyses #storefront,b
 .fl-slip blockquote{font-family:var(--font);font-size:17px;line-height:1.28;color:var(--ink-d)}
 .fl-tp{font-size:14.5px;font-style:italic;border-top:1.5px dashed rgba(61,26,36,.35);margin-top:8px;padding-top:6px}
 @media (max-width:760px){.fl-slips{columns:1}}
+
+.u3-wash{position:absolute;inset:0;z-index:2;background:#8FA9C9;opacity:0;pointer-events:none}
+.u3-head{position:relative;z-index:3}
+.reduce .u3-wash{display:none}
