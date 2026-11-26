@@ -812,7 +812,7 @@ def stage_spotlight():
     a["m"] = a.created_utc.dt.to_period("M").dt.start_time
     a["half"] = a.created_utc.dt.year.astype(str) + "H" + np.where(a.created_utc.dt.month <= 6, "1", "2")
     months = pd.date_range("2021-11-01", "2026-11-01", freq="MS")
-    halves = sorted(a.half.unique())
+    halves = [h for h in sorted(a.half.unique()) if h >= "2022H1"]  # topic mix is shown from 2022 on
     out = {}
     for u in SPOTLIGHT:
         d = a[a.author == u]
