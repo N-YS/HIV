@@ -785,3 +785,9 @@ body.in-analyses #landing,body.in-analyses #brief,body.in-analyses #storefront,b
   .fl-act{height:clamp(130px,30vw,170px)}
   .fl-top-plot{height:clamp(220px,50vw,300px)}
 }
+
+/* speech-bubble slips: grid instead of multicol, so bubble tails are never clipped at column breaks */
+.fl-slips{columns:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;column-gap:24px}
+.fl-slip{break-inside:auto}
+@media (min-width:900px){.fl-slips{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:20px}}
+@media (max-width:760px){.fl-slips{grid-template-columns:minmax(0,1fr)}}

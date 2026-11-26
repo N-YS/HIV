@@ -318,8 +318,8 @@
   /* ---------- dropdown under each tab: short names for the parts of a page ---------- */
   const SUBS = {
     'panel-1': [['Methods', '.methods'], ['Messages over time', '.beat-a'], ['Topics over time', '.beat-b'], ['Conclusion', '.close']],
-    'panel-2': [['Keywords', '.kwsec'], ['Keyword rates', '#lnStage'], ['Tone', '.sentsec'], ['Joint model', '.joint'], ['Side by side', '#cmpStage']],
-    'panel-3': [['Overlap', '#u3Stage'], ['u/Mrtrad', '.fl', 0], ['u/TinyCatLady', '.fl', 1], ['u/MasterMind', '.fl', 2]],
+    'panel-2': [['Keywords', '.kwsec'], ['Tone', '.sentsec'], ['Joint model', '.joint'], ['Side by side', '#cmpStage']],
+    'panel-3': [['Overlap', '#u3Stage'], ['User spotlight', '.fl', 0]],
     'panel-4': [['Overview', '.tk-title'], ['Notes', '.tk-collage'], ['Discussion', '.tk-band'], ['Quote', '.tk-split']]
   };
   /* the page colour behind the footer's wavy edge follows the page you are on */
