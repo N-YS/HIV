@@ -757,3 +757,31 @@ body.in-analyses #landing,body.in-analyses #brief,body.in-analyses #storefront,b
 .u3-wash{position:absolute;inset:0;z-index:2;background:#8FA9C9;opacity:0;pointer-events:none}
 .u3-head{position:relative;z-index:3}
 .reduce .u3-wash{display:none}
+
+/* user spotlight, condensed */
+.fl-ex{margin-top:20px}
+.fl-lead{margin-bottom:6px}
+.fl-sheet{margin:10px 0 4px;padding:10px 12px 6px}
+.fl-foot{margin-top:12px}
+@media (min-width:900px){
+  .fl{width:min(1200px,calc(100% - 28px))}
+  .fl-fields{display:grid;grid-template-columns:1fr 1fr;column-gap:36px;margin-top:12px}
+  .fl-fields>div{grid-template-columns:120px 1fr;padding:3px 0}
+  .fl-fields>div:nth-child(n+7){grid-column:1/-1}
+  #exA{display:grid;grid-template-columns:1fr 1fr;column-gap:16px}
+  #exA h4,#exA .fl-lead{grid-column:1/-1}
+  #exA .fl-sheet{margin-top:6px}
+  .fl-act{height:clamp(140px,13vw,175px)}
+  .fl-tw{grid-template-columns:minmax(0,1fr) minmax(300px,400px)}
+  .fl-top-plot{height:clamp(230px,26vw,300px)}
+  .fl-lg{font-size:14px;padding:2px 6px}
+  .fl-leg{gap:0;margin-top:2px}
+  .fl-slips{columns:3 260px;column-gap:20px;padding-bottom:6px}
+  .fl-slip{margin-bottom:26px}
+  .fl-slip blockquote{font-size:16px;line-height:1.25}
+  .fl-slip figcaption{font-size:14px}
+}
+@media (max-width:899px){
+  .fl-act{height:clamp(130px,30vw,170px)}
+  .fl-top-plot{height:clamp(220px,50vw,300px)}
+}
