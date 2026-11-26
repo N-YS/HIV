@@ -347,9 +347,10 @@
   const pars = Array.from(root.querySelectorAll('[data-par]'));
   const thread = root.querySelector('#thread'), tpath = root.querySelector('#threadPath'), treveal = root.querySelector('#threadReveal'), pencil = root.querySelector('#pencil');
   const OPEN_H = 292;
-  let tlen = 0, tw = 0, th = 0;
+  let tlen = 0, tw = 0, th = 0, dots = [], shown = 0;
 
   function buildThread() {
+    if (!thread) return;
     const w = root.offsetWidth, h = root.offsetHeight - (closeEl ? closeEl.offsetHeight : 0);
     if (!w || !h) return;
     tw = w; th = h;
@@ -363,6 +364,16 @@
     }
     tpath.setAttribute('d', d); treveal.setAttribute('d', d);
     tlen = tpath.getTotalLength();
+    /* the dotted line is a row of separate dots (shown or hidden one by one), which every browser redraws reliably */
+    let g = thread.querySelector('#threadDots');
+    if (!g) { g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.id = 'threadDots'; thread.insertBefore(g, tpath); }
+    while (g.firstChild) g.removeChild(g.firstChild);
+    dots = []; shown = 0;
+    for (let i = 0; i * 11 < tlen; i++) {
+      const pt = tpath.getPointAtLength(i * 11), c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c.setAttribute('cx', pt.x.toFixed(1)); c.setAttribute('cy', pt.y.toFixed(1)); c.setAttribute('r', '1.9'); c.setAttribute('fill', '#673141');
+      c.style.opacity = '0'; g.appendChild(c); dots.push(c);
+    }
   }
 
   let ticking = false;
@@ -380,12 +391,14 @@
     });
 
     /* thread and pencil: the dashed line is revealed through a mask that the pencil "draws" */
-    if (tlen && !reduce) {
+    if (thread && tlen && !reduce) {
       const prog = clamp((vh * 0.55 - rect.top) / Math.max(1, th));
       const L = tlen * prog;
       /* the dots are drawn only up to the pencil: the dash pattern itself grows and shrinks, so scrolling back up erases the line exactly as it was drawn */
-      const n = Math.floor(L / 11), rem = L - n * 11;
-      tpath.style.strokeDasharray = '2 9 '.repeat(n) + (rem > 0.2 ? Math.min(2, rem).toFixed(1) + ' ' : '0 ') + (tlen + 60);
+      const n = Math.min(dots.length, Math.floor(L / 11) + 1);
+      for (let i = shown; i < n; i++) dots[i].style.opacity = '0.8';
+      for (let i = shown - 1; i >= n; i--) dots[i].style.opacity = '0';
+      shown = n;
       if (prog > 0.003 && prog < 0.995) {
         const pt = tpath.getPointAtLength(L), pt2 = tpath.getPointAtLength(Math.min(tlen, L + 6));
         const ang = Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180 / Math.PI;
@@ -413,7 +426,6 @@
   window.addEventListener('scroll', req, { passive: true });
   window.addEventListener('resize', () => { buildThread(); req(); });
   document.addEventListener('panelshown', () => setTimeout(() => { buildThread(); req(); }, 30));
-  tpath.removeAttribute('mask');
   buildThread(); req();
   window.addEventListener('load', () => { buildThread(); req(); });
   if (reduce) document.documentElement.classList.add('reduce');

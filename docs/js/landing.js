@@ -267,7 +267,8 @@
   }
   panels.forEach((p, i) => {
     const nx = p.querySelector('[data-next]');
-    if (nx) nx.addEventListener('click', () => { select(i + 1, true); toPanels(); });
+    /* the comparison scene is long, so its next tag is also pinned inside the scene where it is always in reach */
+    p.querySelectorAll('[data-next]').forEach((b) => b.addEventListener('click', () => { select(i + 1, true); toPanels(); }));
   });
 
 
@@ -313,6 +314,105 @@
     markCurrent();
     const b = navBtns[cur]; if (b) b.parentNode.scrollTo({ left: b.offsetLeft - 12, behavior: 'auto' });
   });
+
+  /* ---------- dropdown under each tab: short names for the parts of a page ---------- */
+  const SUBS = {
+    'panel-1': [['Methods', '.methods'], ['Messages over time', '.beat-a'], ['Topics over time', '.beat-b'], ['Conclusion', '.close']],
+    'panel-2': [['Keywords', '.kwsec'], ['Keyword rates', '#lnStage'], ['Tone', '.sentsec'], ['Joint model', '.joint'], ['Side by side', '#cmpStage']],
+    'panel-3': [['Overlap', '#u3Stage'], ['u/Mrtrad', '.fl', 0], ['u/TinyCatLady', '.fl', 1], ['u/MasterMind', '.fl', 2]],
+    'panel-4': [['Overview', '.tk-title'], ['Notes', '.tk-collage'], ['Discussion', '.tk-band'], ['Quote', '.tk-split']]
+  };
+  /* the page colour behind the footer's wavy edge follows the page you are on */
+  const BG = ['#D4E8C6', '#476489', '#D5E4F1', '#F2F9FD'];
+  const markBg = () => { document.body.style.backgroundColor = menuEl.hidden ? '' : (BG[cur] || ''); };
+  document.addEventListener('panelshown', markBg); window.addEventListener('scroll', markBg, { passive: true }); markBg();
+  const BRIEF = [['Title', 'title'], ['Summary', 'summary'], ['Timeline', 'timeline'], ['Data', 'data']];
+  const entriesOf = (i) => (i < 0 ? BRIEF : (panels[i] && SUBS[panels[i].id]));
+  function goBrief(s) {
+    toIntro('none');
+    const jump = () => {
+      let y = 0;
+      if (s[1] === 'summary') y = landing.offsetTop + landing.offsetHeight - window.innerHeight;
+      else if (s[1] === 'timeline') { const e = $('storefront'); if (e) y = e.getBoundingClientRect().top + window.scrollY - 70; }
+      else if (s[1] === 'data') y = brief2.getBoundingClientRect().top + window.scrollY - 10;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
+    };
+    requestAnimationFrame(jump); setTimeout(jump, 160); setTimeout(jump, 420);
+  }
+  const target = (p, s) => { if (s[1] === '.fl') return p.querySelector('.fl:not([hidden])'); const all = p.querySelectorAll(s[1]); return all[s[2] || 0] || null; };
+  function goSub(i, s) {
+    if (i < 0) { goBrief(s); return; }
+    const p = panels[i];
+    if (cur !== i) { select(i, true); reveal(); } else reveal();
+    if (s[1] === '.fl') document.dispatchEvent(new CustomEvent('flselect', { detail: s[2] || 0 }));
+    const jump = () => { const el = target(p, s); if (el) window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 76), behavior: 'auto' }); };
+    requestAnimationFrame(jump); setTimeout(jump, 160); setTimeout(jump, 420);
+  }
+  if (nav && window.matchMedia) {
+    const mq = matchMedia('(min-width: 761px) and (hover: hover)');
+    const dd = document.createElement('div'); dd.className = 'tn-dd'; dd.id = 'tnDd'; dd.hidden = true; dd.setAttribute('role', 'menu'); nav.appendChild(dd);
+    const anchors = [briefLink].concat(navBtns);
+    let openFor = null, closeT = 0;
+    function closeDd() { dd.hidden = true; openFor = null; anchors.forEach((b) => b && b.removeAttribute('aria-expanded')); }
+    function openDd(i) {
+      if (!mq.matches) return;
+      const list = entriesOf(i); if (!list) { closeDd(); return; }
+      clearTimeout(closeT);
+      if (openFor !== i) {
+        dd.textContent = '';
+        list.forEach((s) => {
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'tn-dd-i'; b.setAttribute('role', 'menuitem'); b.textContent = s[0];
+          b.addEventListener('click', () => { closeDd(); goSub(i, s); });
+          dd.appendChild(b);
+        });
+      }
+      const nr = nav.getBoundingClientRect(), br = anchors[i + 1].getBoundingClientRect();
+      dd.style.left = Math.max(6, br.left - nr.left - 4) + 'px'; dd.hidden = false; openFor = i;
+      anchors.forEach((b, j) => { if (!b) return; if (j === i + 1) b.setAttribute('aria-expanded', 'true'); else b.removeAttribute('aria-expanded'); });
+    }
+    const later = () => { clearTimeout(closeT); closeT = setTimeout(closeDd, 220); };
+    anchors.forEach((b, k) => {
+      if (!b) return;
+      b.addEventListener('mouseenter', () => openDd(k - 1)); b.addEventListener('mouseleave', later);
+      b.addEventListener('focus', () => openDd(k - 1));
+    });
+    dd.addEventListener('mouseenter', () => clearTimeout(closeT)); dd.addEventListener('mouseleave', later);
+    nav.addEventListener('focusout', (e) => { if (!nav.contains(e.relatedTarget)) closeDd(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDd(); });
+    document.addEventListener('panelshown', closeDd);
+
+    /* phones: the open menu lists the parts of the page you are on, under its tab */
+    const strip2 = document.getElementById('tnTabs'), burger2 = nav.querySelector('.tn-burger'), subs = [];
+    const mkSub = (i, anchor) => {
+      const list = entriesOf(i); if (!list || !strip2 || !anchor) { subs.push(null); return; }
+      const box = document.createElement('div'); box.className = 'tn-sub';
+      list.forEach((s) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'tn-sub-i'; b.textContent = s[0];
+        b.addEventListener('click', () => { nav.classList.remove('open'); if (burger2) burger2.setAttribute('aria-expanded', 'false'); goSub(i, s); });
+        box.appendChild(b);
+      });
+      anchor.after(box); subs.push(box);
+    };
+    mkSub(-1, briefLink); panels.forEach((p, i) => mkSub(i, navBtns[i]));
+    const markSubs = () => subs.forEach((b, k) => { if (b) b.classList.toggle('cur', menuEl.hidden ? k === 0 : k === cur + 1); });
+    document.addEventListener('panelshown', markSubs); window.addEventListener('scroll', markSubs, { passive: true }); markSubs();
+    if (burger2) burger2.addEventListener('click', markSubs, true);
+
+    /* footer: every page and its parts, under a drawn scene */
+    const cols = document.getElementById('sfCols');
+    if (cols) {
+      const mkBtn = (cls, txt, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = txt; b.addEventListener('click', fn); return b; };
+      const addCol = (title, headFn, i) => {
+        const col = document.createElement('div'); col.className = 'sf-col';
+        col.appendChild(mkBtn('sf-h', title, headFn));
+        const list = entriesOf(i);
+        if (list) { const ul = document.createElement('ul'); list.forEach((s) => { const li = document.createElement('li'); li.appendChild(mkBtn('sf-i', s[0], () => goSub(i, s))); ul.appendChild(li); }); col.appendChild(ul); }
+        cols.appendChild(col);
+      };
+      addCol('Brief', () => toIntro('brief'), -1);
+      panels.forEach((p, i) => addCol(p.dataset.title, () => { select(i, true); toPanels(); }, i));
+    }
+  }
   select(0, false);
   const goIntro = (e) => { e.preventDefault(); toIntro('brief'); };
   if (briefLink) briefLink.addEventListener('click', goIntro);
